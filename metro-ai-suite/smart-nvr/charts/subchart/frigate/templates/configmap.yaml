@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: init-resources-script
+data:
+  init.sh: |
+    #!/bin/sh
+    set -e
+    TARGET_DIR="/videos"
+    MAX_RETRIES=3
+    RETRY_DELAY=10
+
+    echo "Preparing target directory..."
+    mkdir -p $TARGET_DIR || { echo "ERROR: Cannot create $TARGET_DIR"; exit 1; }
+
+    download_file() {
+      local url=$1
+      local output=$2
+      local attempt=1
+
+      while [ $attempt -le $MAX_RETRIES ]; do
+        echo "Downloading $url (attempt $attempt)..."
+        curl -fSL --connect-timeout 15 --max-time 300 -o "$output" "$url" && break
+
+        echo "WARNING: Failed to download $url (attempt $attempt). Retrying in $RETRY_DELAY seconds..."
+        attempt=$((attempt + 1))
+        sleep $RETRY_DELAY
+      done
+
+      if [ $attempt -gt $MAX_RETRIES ]; then
+        echo "ERROR: Could not download $url after $MAX_RETRIES attempts."
+        exit 1
+      fi
+    }
+
+    echo "Downloading resources to $TARGET_DIR..."
+    download_file https://raw.githubusercontent.com/open-edge-platform/edge-ai-suites/main/metro-ai-suite/smart-nvr/resources/videos/backyard.mp4 "$TARGET_DIR/backyard.mp4"
+    download_file https://raw.githubusercontent.com/open-edge-platform/edge-ai-suites/main/metro-ai-suite/smart-nvr/resources/videos/garage.mp4 "$TARGET_DIR/garage.mp4"
+    download_file https://raw.githubusercontent.com/open-edge-platform/edge-ai-suites/main/metro-ai-suite/smart-nvr/resources/videos/livingroom.mp4 "$TARGET_DIR/livingroom.mp4"
+
+    echo "Resources successfully downloaded to $TARGET_DIR."
