@@ -1,0 +1,6 @@
+image:
+  repository: eclipse-mosquitto
+  tag: 2.0
+env:
+  MQTT_USER: frigate
+  MQTT_PASSWORD: mqtt

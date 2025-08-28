@@ -1,0 +1,20 @@
+apiVersion: v2
+name: smart-nvr
+description: A Helm chart for NVR 
+version: 0.1.0
+dependencies:
+  - name: frigate
+    version: 0.1.0
+    repository: "file://subchart/frigate"
+  - name: nvr-event-router
+    version: 0.1.0
+    repository: "file://subchart/nvr-event-router"
+  - name: nvr-event-router-ui
+    version: 0.1.0
+    repository: "file://subchart/nvr-event-router-ui"
+  - name: mqtt-broker
+    version: 0.1.0
+    repository: "file://subchart/mqtt-broker"
+  - name: redis
+    version: 0.1.0
+    repository: "file://subchart/redis"
