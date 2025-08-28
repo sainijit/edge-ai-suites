@@ -72,7 +72,7 @@ Update or edit the values in YAML file as follows:
 
 | Key | Description | Example Value |
 | --- | ----------- | ------------- |
-| `global.pvcName` | Name for PVC to be used for storage by all components of application | `vss-shared-pvc` |
+| `global.pvcName` | Name for PVC to be used for storage by all components of application | `nvr-resource` |
 | `global.keepPvc` | PVC gets deleted by default once helm is uninstalled. Set this to true to persist PVC (helps avoid delay due to model re-downloads when re-installing chart). | `true` or `false` |
 | `global.storageClassName` | PVC storage class name | `<pvc-storage-class-name>` |
 | `global.proxy.http_proxy` | HTTP proxy if required | `http://proxy-example.com:000` |
