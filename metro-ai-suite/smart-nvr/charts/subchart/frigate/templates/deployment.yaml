@@ -39,7 +39,7 @@ spec:
             runAsUser: 0
             runAsGroup: 0
 
-        # ✅ New initContainer to copy config file into writable /config
+        #  New initContainer to copy config file into writable /config
         - name: copy-frigate-config
           image: busybox
           command: ["/bin/sh", "-c", "cp /cm/config.yaml /config/config.yaml"]
@@ -66,7 +66,7 @@ spec:
             - name: localtime
               mountPath: /etc/localtime
               readOnly: true
-            # ✅ Writable config dir
+            # Writable config dir
             - name: frigate-config-dir
               mountPath: /config
             - name: {{ .Values.global.pvcName }}
@@ -118,11 +118,11 @@ spec:
             name: init-resources-script
             defaultMode: 0755
 
-        # ✅ ConfigMap with your frigate.yaml
+        #  ConfigMap with your frigate.yaml
         - name: frigate-config-cm
           configMap:
             name: frigate-config
 
-        # ✅ Writable config dir
+        #  Writable config dir
         - name: frigate-config-dir
           emptyDir: {}
