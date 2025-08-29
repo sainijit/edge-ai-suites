@@ -48,9 +48,9 @@ spec:
             - name: REDIS_HOST
               value: "{{ .Values.env.REDIS_HOST }}"
             - name: MQTT_BROKER
-              value: "{{ .Values.env.MQTT_BROKER }}"   # Kubernetes service name
+              value: "{{ .Values.env.MQTT_BROKER }}"   
             - name: MQTT_PORT
-              value: "{{ .Values.env.MQTT_PORT }}"     # Default Mosquitto port
+              value: "{{ .Values.env.MQTT_PORT }}"     
 
           readinessProbe:
             httpGet:

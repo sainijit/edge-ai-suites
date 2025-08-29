@@ -25,10 +25,6 @@ env:
 
 
 volumes:
-  appSrc:
-    name: app-src
-    hostPath: /home/intel/jsaini/edge-ai-suites/metro-ai-suite/smart-nvr/src
-    mountPath: /app/backend
   localtime:
     name: localtime
     hostPath: /etc/localtime
