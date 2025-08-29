@@ -4,9 +4,9 @@ image:
   pullPolicy: IfNotPresent
 
 env:
-  FRIGATE_MQTT_USER: "frigate"
-  FRIGATE_MQTT_PASSWORD: "mqtt"
-  OPENAI_BASE_URL: "http://10.223.24.242:9766"
+  FRIGATE_MQTT_USER: ""
+  FRIGATE_MQTT_PASSWORD: ""
+  OPENAI_BASE_URL: ""
   OPENAI_API_KEY: "your_openai_api_key"
 
 persistence:

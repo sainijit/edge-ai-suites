@@ -84,8 +84,8 @@ mqtt-broker:
     repository: eclipse-mosquitto
     tag: 2.0
   env:
-    MQTT_USER: "frigate"
-    MQTT_PASSWORD: "mqtt"
+    MQTT_USER: ""
+    MQTT_PASSWORD: ""
 
 redis:
   image:

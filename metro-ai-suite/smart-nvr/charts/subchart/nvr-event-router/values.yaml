@@ -16,8 +16,8 @@ env:
   VSS_SUMMARY_IP: ""
   VSS_SUMMARY_PORT: 12345
   no_proxy: ""
-  MQTT_USER: "frigate"
-  MQTT_PASSWORD: "mqtt"
+  MQTT_USER: ""
+  MQTT_PASSWORD: ""
   REDIS_PORT: 6379
   REDIS_HOST: "redis"
   MQTT_BROKER: "mqtt-broker"
