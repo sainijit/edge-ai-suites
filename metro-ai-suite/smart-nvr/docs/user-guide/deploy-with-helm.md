@@ -10,6 +10,23 @@ Before you begin, ensure that you have the following:
 - Helm chart installed on your system. See the [Installation Guide](https://helm.sh/docs/intro/install/).
 - **Storage Requirement :** Application requests for **50GiB** of storage in its default configuration. (This should change with choice of models and needs to be properly configured). Please make sure that required storage is available in you cluster.
 
+Before setting up Smart NVR, ensure these services are running on their respective devices:
+
+#### 1. VSS (Video Search and Summarization) Services
+Deploy these on separate devices:
+- **VSS Search**: Handles video search functionality
+- **VSS Summary**: Provides video summarization capabilities
+
+📖 [VSS Documentation](https://github.com/open-edge-platform/edge-ai-libraries/blob/main/sample-applications/video-search-and-summarization/docs/user-guide/get-started.md)
+
+#### 2. VLM Microservice (Optional)
+Required only when enabling AI-powered event descriptions (`NVR_GENAI=true`):
+- Runs the VLM model defined in the frigate [config file](../../resources/frigate-config/config.yml)
+- Use `VLM_MAX_COMPLETION_TOKENS` to limit response length during deployment
+
+📖 [VLM Serving Documentation](https://github.com/open-edge-platform/edge-ai-libraries/blob/main/microservices/vlm-openvino-serving/docs/user-guide/get-started.md)
+
+
 # Helm Chart Installation
 
 In order to setup the end-to-end application, we need to acquire the charts and install it with optimal values and configurations. Subsequent sections will provide step by step details for the same.
@@ -24,7 +41,7 @@ There are 2 options to get the charts in your workspace:
 
 Use the following command to pull the Helm chart from Docker Hub:
 ```bash
-helm pull oci://registry-1.docker.io/intel/smart-nvr --version <version-no>
+helm pull oci://registry-1.docker.io/intel/smart-nvr --version 1.2.0
 ```
 
 Refer to the release notes for details on the latest version number to use for the sample application.
@@ -33,7 +50,7 @@ Refer to the release notes for details on the latest version number to use for t
 
 After pulling the chart, extract the `.tgz` file:
 ```bash
-tar -xvf smart-nvr-<version-no>.tgz
+tar -xvf smart-nvr-1.2.0.tgz
 ```
 
 This will create a directory named `smart-nvr` containing the chart files. Navigate to the extracted directory to access the charts.
