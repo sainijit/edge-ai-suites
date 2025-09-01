@@ -203,7 +203,8 @@ helm uninstall smart-nvr -n $my_namespace
 
 - **All containers Ready, all Pods in Running state, application UI is accessible but search or summary is failing.**
 
-  If PVC has been configured to be retained, most common reason for application to fail to work is a stale PVC. This problem most likely occurs when helm charts are re-installed after some updates to helm chart or the application image. To fix this, delete the PVC before re-installing the helm chart by following command:
+  - Verify that the VSS Search and Summary services are running properly.
+  - If PVC has been configured to be retained, most common reason for application to fail to work is a stale PVC. This problem most likely occurs when helm charts are re-installed after some updates to helm chart or the application image. To fix this, delete the PVC before re-installing the helm chart by following command:
 
     ```bash
     kubectl delete pvc nvr-resource -n <your_namespace>
@@ -217,19 +218,10 @@ helm uninstall smart-nvr -n $my_namespace
     kubectl logs <pod-name> -n $my_namespace
     ```
 
-- For component-specific issues:
-  - Video ingestion problems: Check the logs of the videoingestion pod
-  - VLM inference issues: Check the logs of the vlm-inference-microservice pod
-  - Database connection problems: Verify the PostgreSQL pod is running correctly
-  - Storage issues: Check the MinIO server status and connectivity
-
 - Some issues might be fixed by freshly setting up storage. This is helpful in cases where deletion of PVC is prohibited by configuration on charts un-installation (when `global.keepPvc` is set to true):
 
     ```bash
     kubectl delete pvc <pvc-name> -n $my_namespace
     ```
-
-- If you're experiencing issues with the Hugging Face API, ensure your API token `global.huggingfaceToken` is valid and properly set in the `user_values_override.yaml` file.
-
 ## Related links
 - [How to Build from Source](./how-to-build-from-source.md)
