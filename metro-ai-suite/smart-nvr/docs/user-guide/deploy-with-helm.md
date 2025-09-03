@@ -137,7 +137,7 @@ We will install the helm chart in a new namespace. Create a shell variable to re
 Deploy the Smart NVR Application:
 
 ```bash
-helm install smart-nvr . -f user_values_override.yaml -n $my_namespace
+helm install smart-nvr . -f user_value_override.yaml -n $my_namespace
 ```
 
 ### Step 6: Verify the Deployment
@@ -165,8 +165,8 @@ Nginx service running as a reverse proxy in one of the pods, helps us to access 
 Run the following command to get the host IP of the node and port exposed by Nginx service:
 
 ```bash
-smart_nvr_ip=$(kubectl get pods -l app=nvr-event-router-ui-nginx -n nvr -o jsonpath='{.items[0].status.hostIP}')
-smart_nvr_port=$(kubectl get service nvr-event-router-ui-nginx -n nvr -o jsonpath='{.spec.ports[0].nodePort}')
+smart_nvr_ip=$(kubectl get pods -l app=nvr-event-router-ui-nginx -n $my_namespace -o jsonpath='{.items[0].status.hostIP}')
+smart_nvr_port=$(kubectl get service nvr-event-router-ui-nginx -n $my_namespace -o jsonpath='{.spec.ports[0].nodePort}')
 echo "http://${smart_nvr_ip}:${smart_nvr_port}"
 ```
 
