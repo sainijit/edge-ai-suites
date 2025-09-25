@@ -16,6 +16,8 @@ from services.api_client import (
     delete_rule_by_id,
     fetch_search_responses,
     fetch_summary_status,
+    fetch_camera_watcher_mapping,
+    submit_camera_watcher_mapping,
 )
 from services.video_processor import process_video
 from services.event_utils import display_events
@@ -472,6 +474,89 @@ def create_ui():
                     fn=refresh_summary_status,
                     inputs=[summary_id_state],
                     outputs=[status_output, toast_output, close_toast_btn],
+                )
+
+            # Tab 2: Configure Camera Streaming (enable/disable watcher per camera)
+            with gr.TabItem("Configure Camera Streaming"):
+                gr.Markdown("### Enable / Disable Cameras for Continuous Streaming ")
+                gr.Markdown("Select the cameras you want the backend watcher to process.")
+                # Fetch and normalize mapping (strip whitespace in keys for safety)
+                current_mapping = fetch_camera_watcher_mapping()
+                normalized_mapping = {str(k).strip(): v for k, v in (current_mapping or {}).items()}
+                # Pre-select cameras explicitly enabled (True)
+                preselected = [c for c in camera_list if normalized_mapping.get(str(c).strip()) is True]
+
+                with gr.Row():
+                    with gr.Column(scale=4):
+                        camera_selector = gr.CheckboxGroup(
+                            choices=camera_list,
+                            value=preselected,
+                            label="Enabled Cameras"
+                        )
+                    with gr.Column(scale=1, min_width=120):
+                        with gr.Row():
+                            submit_cameras_btn = gr.Button(
+                                "Submit",
+                                elem_id="submit-cameras-btn",
+                                variant="primary"
+                            )
+                        with gr.Row():
+                            refresh_cameras_btn = gr.Button(
+                                "Refresh",
+                                elem_id="refresh-cameras-btn",
+                                variant="secondary",
+                                size="sm"
+                            )
+
+                # Style the submit button to appear smaller
+                gr.HTML(
+                    """
+                    <style>
+                    #submit-cameras-btn button {
+                        padding: 4px 12px !important;
+                        font-size: 0.8rem !important;
+                        line-height: 1.1 !important;
+                        min-height: 30px !important;
+                    }
+                    </style>
+                    """
+                )
+
+                # Popup-style status (auto hide) using Markdown for simple formatting
+                camera_save_status = gr.Markdown(visible=False)
+
+                def submit_camera_config(selected):
+                    selected = selected or []
+                    resp = submit_camera_watcher_mapping(selected, camera_list)
+                    if "error" in resp:
+                        # Show then auto-hide
+                        yield gr.update(value=f"❌ {resp['error']}", visible=True)
+                        time.sleep(5)
+                        yield gr.update(visible=False)
+                        return
+                    enabled = resp.get("enabled", [])
+                    disabled = resp.get("disabled", [])
+                    msg = f"✅ Updated. Enabled: {enabled} | Disabled: {disabled}"
+                    yield gr.update(value=msg, visible=True)
+                    time.sleep(5)
+                    yield gr.update(visible=False)
+
+                submit_cameras_btn.click(
+                    fn=submit_camera_config,
+                    inputs=[camera_selector],
+                    outputs=[camera_save_status]
+                )
+
+                def refresh_camera_mapping():
+                    mapping = fetch_camera_watcher_mapping() or {}
+                    norm = {str(k).strip(): v for k, v in mapping.items()}
+                    new_selected = [c for c in camera_list if norm.get(str(c).strip()) is True]
+                    return gr.update(value=new_selected), gr.update(value=f"🔄 Refreshed mapping. Enabled: {new_selected}", visible=True)
+
+                refresh_cameras_btn.click(
+                    fn=refresh_camera_mapping,
+                    inputs=[],
+                    outputs=[camera_selector, camera_save_status]
                 )
 
             if show_genai_tab:

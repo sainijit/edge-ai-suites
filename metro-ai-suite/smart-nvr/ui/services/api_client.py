@@ -18,6 +18,37 @@ def fetch_cameras() -> Dict[str, List[str]]:
         return {}
 
 
+def fetch_camera_watcher_mapping() -> Dict[str, bool]:
+    """Return current enabled/disabled mapping for cameras (empty dict on failure)."""
+    try:
+        resp = requests.get(f"{API_BASE_URL}/watchers/mapping", timeout=10)
+        resp.raise_for_status()
+        data = resp.json() or {}
+        return data.get("mapping", {}) or {}
+    except Exception as e:
+        logger.error(f"Error fetching camera watcher mapping: {e}")
+        return {}
+
+
+def submit_camera_watcher_mapping(enabled_list: List[str], all_cameras: List[str]) -> Dict:
+    """Submit updated mapping to backend.
+
+    Args:
+        enabled_list: list of camera names user selected as enabled.
+        all_cameras: full list of cameras (to send disabled ones explicitly).
+    Returns: server response dict (or {'error': ...}).
+    """
+    payload = {"cameras": [{c: (c in enabled_list)} for c in all_cameras]}
+    try:
+        resp = requests.post(f"{API_BASE_URL}/watchers/enable", json=payload, timeout=15)
+        if resp.status_code == 200:
+            return resp.json()
+        return {"error": f"Status {resp.status_code}: {resp.text}"}
+    except Exception as e:
+        logger.error(f"Error submitting watcher mapping: {e}")
+        return {"error": str(e)}
+
+
 def fetch_events(camera_name):
     try:
         response = requests.get(
