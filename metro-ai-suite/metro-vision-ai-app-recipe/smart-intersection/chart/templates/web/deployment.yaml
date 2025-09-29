@@ -14,6 +14,8 @@ spec:
     metadata:
       labels:
         app: {{ .Release.Name }}-web
+      annotations:
+        checksum/secrets: {{ include (print $.Template.BasePath "/app-secrets.yaml") . | sha256sum }}
     spec:
       # initContainers:
       # - name: init-smart-intersection-ri-web
@@ -55,7 +57,7 @@ spec:
         - name: pgserver-media
           mountPath: /workspace/media
         - name: secrets
-          mountPath: /tmp/secrets  # Mount secrets in /tmp/secrets
+          mountPath: /tmp/secrets
         - name: smart-intersection-ri-web-data
           mountPath: /data
         securityContext:
@@ -75,8 +77,24 @@ spec:
         persistentVolumeClaim:
           claimName: {{ .Release.Name }}-pgserver-media
       - name: secrets
-        secret:
-          secretName: {{ .Release.Name }}-web-secrets
-      - name:  {{ .Release.Name }}-ri-web-data
+        projected:
+          sources:
+          - secret:
+              name: {{ .Release.Name }}-mqtt-auth-secrets
+          - secret:
+              name: {{ .Release.Name }}-django-secrets
+          - secret:
+              name: {{ .Release.Name }}-web-tls
+              items:
+              - key: tls.crt
+                path: scenescape-web.crt
+              - key: tls.key
+                path: scenescape-web.key
+          - secret:
+              name: {{ .Release.Name }}-ca-secret
+              items:
+              - key: tls.crt
+                path: scenescape-ca.pem
+      - name: {{ .Release.Name }}-ri-web-data
         persistentVolumeClaim:
           claimName: {{ .Release.Name }}-ri-pvc

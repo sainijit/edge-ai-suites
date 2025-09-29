@@ -13,14 +13,28 @@ spec:
     metadata:
       labels:
         app: {{ .Release.Name }}-nodered
+      annotations:
+        checksum/secrets: {{ include (print $.Template.BasePath "/app-secrets.yaml") . | sha256sum }}
     spec:
       volumes:
       - name: nodered-config
         configMap:
           name: {{ .Release.Name }}-nodered # Reference the ConfigMap created above
       - name: secrets-volume
-        secret:
-          secretName: {{ .Release.Name }}-nodered-rootcert
+        projected:
+          sources:
+          - secret:
+              name: {{ .Release.Name }}-ca-secret
+              items:
+              - key: tls.crt
+                path: root-cert
+          - secret:
+              name: {{ .Release.Name }}-broker-tls
+              items:
+              - key: tls.crt
+                path: broker-cert
+              - key: tls.key
+                path: broker-key
       containers:
       - envFrom:
         - configMapRef:
@@ -41,11 +55,11 @@ spec:
           - name: INFLUX_TOKEN
             valueFrom:
               secretKeyRef:
-                name: {{ .Release.Name }}-nodered-secrets
+                name: {{ .Release.Name }}-influxdb-secrets
                 key: influxdb2-admin-token
         image: {{ .Values.nodered.repository }}:{{ .Values.nodered.tag }}
         name: {{ .Release.Name }}-nodered
-        imagePullPolicy: {{ .Values.nodered.imagePullPolicy }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
         volumeMounts:
           - name: secrets-volume
             mountPath: /mosquitto/secrets

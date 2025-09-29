@@ -38,4 +38,4 @@ This sample application offers the following features:
 - High-speed data exchange with low-latency compute.
 - AI-assisted worker safety gear detection monitoring in real-time as workers enter the construction site.
 - On-premise data processing for data privacy and efficient use of bandwidth.
-- Interconnected constuction site cameras deliver analytics for quick and informed tracking and decision making.
+- Interconnected construction site cameras deliver analytics for quick and informed tracking and decision making.
