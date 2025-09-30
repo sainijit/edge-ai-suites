@@ -9,6 +9,7 @@ import time
 import logging
 from services.api_client import (
     fetch_cameras,
+    fetch_cameras_with_labels,
     fetch_events,
     add_rule,
     fetch_rule_responses,
@@ -332,8 +333,23 @@ def auto_refresh_summary_status(summary_id):
 def create_ui():
     show_genai_tab = os.getenv("NVR_GENAI", "false").lower() == "true"
     time.sleep(5)  # Ensure the environment is fully initialized
-    camera_data = fetch_cameras()
-    camera_list = list(camera_data.keys())
+    # Prefer enriched labels-aware fetch; fall back to simple list on error
+    camera_list, camera_labels_map = fetch_cameras_with_labels()
+    if not camera_list:
+        # Fallback path (older behavior)
+        camera_data = fetch_cameras()
+        if isinstance(camera_data, list):
+            camera_list = camera_data
+            camera_labels_map = {c: [] for c in camera_list}
+        elif isinstance(camera_data, dict):
+            camera_list = list(camera_data.keys())
+            camera_labels_map = {k: (v if isinstance(v, list) else []) for k, v in camera_data.items()}
+        else:
+            logger.warning(
+                f"Unexpected camera_data type {type(camera_data)} from fetch_cameras(); defaulting to empty list"
+            )
+            camera_list = []
+            camera_labels_map = {}
     recent_events = []
     def get_labels_for_camera(camera_name):
         # Dummy example mapping camera to labels
@@ -341,9 +357,9 @@ def create_ui():
             "Front Gate": ["person", "car", "dog"],
             "Backyard": ["cat", "person"],
         }
-
-        labels = camera_data.get(camera_name, [])
-
+        labels = camera_labels_map.get(camera_name, []) if camera_labels_map else []
+        if not labels:  # fallback to example mapping
+            labels = camera_to_labels.get(camera_name, [])
         return gr.update(choices=labels, value=None)
 
     def format_summary_responses():
@@ -541,10 +557,26 @@ def create_ui():
                     time.sleep(5)
                     yield gr.update(visible=False)
 
-                submit_cameras_btn.click(
+                # Submit selection; keep handle to chain a post-refresh
+                submit_event = submit_cameras_btn.click(
                     fn=submit_camera_config,
                     inputs=[camera_selector],
                     outputs=[camera_save_status]
+                )
+
+                def refresh_camera_selector_only():
+                    """Fetch latest mapping and update only selector values.
+                    Avoids overwriting the status message (unlike full refresh)."""
+                    mapping = fetch_camera_watcher_mapping() or {}
+                    norm = {str(k).strip(): v for k, v in mapping.items()}
+                    new_selected = [c for c in camera_list if norm.get(str(c).strip()) is True]
+                    return gr.update(value=new_selected)
+
+                # After submit finishes (generator completes), refresh the selector so it never shows stale state
+                submit_event.then(
+                    fn=refresh_camera_selector_only,
+                    inputs=[],
+                    outputs=[camera_selector]
                 )
 
                 def refresh_camera_mapping():

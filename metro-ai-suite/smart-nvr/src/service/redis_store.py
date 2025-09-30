@@ -5,6 +5,10 @@ import json
 from fastapi import Request
 from config import REDIS_HOST, REDIS_PORT
 import redis.asyncio as redis
+import logging
+
+# Module logger (was missing causing NameError in tests when error branch executed)
+logger = logging.getLogger(__name__)
 
 # --- RULE MANAGEMENT ---
 # Fallback client for non-FastAPI contexts (like MQTT)

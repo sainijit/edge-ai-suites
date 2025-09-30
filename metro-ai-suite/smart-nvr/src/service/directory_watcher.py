@@ -38,7 +38,7 @@ if _extra_paths_raw:
 if not _root_watch_paths:
     logger.warning("No watch root paths configured (WATCH_DIRECTORY_CONTAINER_PATH or WATCH_DIRECTORY_CONTAINER_PATHS)")
 
-initial_upload_status = {"total": 0, "completed": 0, "pending": 0}
+# Removed initial upload status tracking (was unused externally)
 
 
 class DebouncedHandler(FileSystemEventHandler):
@@ -91,47 +91,33 @@ class DebouncedHandler(FileSystemEventHandler):
             logger.debug(f"Could not determine camera for {file_path}: {e}")
             return False
 
-    def on_created(self, event):
-        if event.is_directory:
+    def _handle_file_event(self, path: str, log_prefix: str):
+        """Common logic for created/modified events."""
+        if not path.endswith(".mp4"):
             return
-        if not event.src_path.endswith(".mp4"):
-            return
-        if not os.path.exists(event.src_path):  # transient
+        if not os.path.exists(path):  # transient create/delete racing
             return
         try:
-            if os.path.getsize(event.src_path) <= 524288:  # ~512KB threshold
+            if os.path.getsize(path) <= 524288:  # ~512KB threshold; ignore tiny partial files
                 return
         except OSError:
             return
-
-        if not self._camera_enabled(event.src_path):
+        if not self._camera_enabled(path):
             return
-
-        logger.info(f"[Watcher] on_created accepted file: {event.src_path}")
+        # Use debug for modified, info for first-time create scale reduction
+        log_fn = logger.info if log_prefix == "created" else logger.debug
+        log_fn(f"[Watcher] {log_prefix} accepted file: {path}")
         with self.lock:
-            self.file_paths.add(event.src_path)
+            self.file_paths.add(path)
         self._debounce()
 
-    def on_modified(self, event):
-        if event.is_directory:
-            return
-        if not event.src_path.endswith(".mp4"):
-            return
-        if not os.path.exists(event.src_path):
-            return
-        try:
-            if os.path.getsize(event.src_path) <= 524288:
-                return
-        except OSError:
-            return
+    def on_created(self, event):  # watchdog callback
+        if not event.is_directory:
+            self._handle_file_event(event.src_path, "created")
 
-        if not self._camera_enabled(event.src_path):
-            return
-
-        logger.debug(f"[Watcher] on_modified accepted file: {event.src_path}")
-        with self.lock:
-            self.file_paths.add(event.src_path)
-        self._debounce()
+    def on_modified(self, event):  # watchdog callback
+        if not event.is_directory:
+            self._handle_file_event(event.src_path, "modified")
 
     def _debounce(self):
         if self.first_event_time is None:
@@ -151,13 +137,14 @@ class DebouncedHandler(FileSystemEventHandler):
             try:
                 with self.lock:
                     if not self.file_paths:
-                        logger.debug("[Watcher] _process_files invoked but no files queued")
+                        # Nothing to do; avoid invoking action with empty set (was causing empty batch callbacks in tests)
+                        logger.debug("[Watcher] _process_files invoked but no files queued; skipping action dispatch")
+                        self.first_event_time = None
+                        return
                     else:
                         logger.info(f"[Watcher] Processing batch of {len(self.file_paths)} files:")
                         for p in list(self.file_paths):
                             logger.info(f"  - {p}")
-                    initial_upload_status["total"] += len(self.file_paths)
-                    initial_upload_status["pending"] += len(self.file_paths)
                     start_ts = time.time()
                     try:
                         result = self.action(self.file_paths)
@@ -169,8 +156,6 @@ class DebouncedHandler(FileSystemEventHandler):
                         logger.info(f"[Watcher] Batch action success (files={len(self.file_paths)} elapsed={duration:.2f}s)")
                     else:
                         logger.warning(f"[Watcher] Batch action reported failure or partial success (files={len(self.file_paths)} elapsed={duration:.2f}s). Check preceding logs for details.")
-                    initial_upload_status["completed"] += len(self.file_paths)
-                    initial_upload_status["pending"] -= len(self.file_paths)
                     self.file_paths.clear()
                     self.first_event_time = None
             except Exception as e:
@@ -183,57 +168,7 @@ class DebouncedHandler(FileSystemEventHandler):
         action_thread.start()
 
 
-def upload_initial_videos(path):
-    global initial_upload_status
-    logger.debug(f"Starting initial upload of videos from {path}")
-    
-    video_files = []
-    if settings.WATCH_DIRECTORY_RECURSIVE:
-        # Recursively find all MP4 files in subdirectories
-        for root, dirs, files in os.walk(path):
-            for f in files:
-                if f.endswith(".mp4"):
-                    file_path = os.path.join(root, f)
-                    if os.path.getsize(file_path) > 524288:
-                        video_files.append(file_path)
-        logger.debug(f"Recursive scan found {len(video_files)} video files for initial upload")
-    else:
-        # Only scan the top-level directory
-        video_files = [
-            os.path.join(path, f)
-            for f in os.listdir(path)
-            if f.endswith(".mp4") and os.path.getsize(os.path.join(path, f)) > 524288
-        ]
-        logger.debug(f"Top-level scan found {len(video_files)} video files for initial upload")
-    
-    initial_upload_status["total"] = len(video_files)
-    initial_upload_status["pending"] = len(video_files)
-
-    def upload_batch(batch):
-        global initial_upload_status
-        try:
-            logger.debug(f"Uploading batch of {len(batch)} videos: {batch}")
-            success = upload_videos_to_dataprep(batch)
-            if success:
-                initial_upload_status["completed"] += len(batch)
-                initial_upload_status["pending"] -= len(batch)
-                logger.debug(
-                    f"Batch upload complete. Completed: {initial_upload_status['completed']}, Pending: {initial_upload_status['pending']}"
-                )
-                if settings.DELETE_PROCESSED_FILES:
-                    for file_path in batch:
-                        os.remove(file_path)
-                        logger.info(f"Deleted processed file {file_path}")
-            else:
-                logger.error(f"Batch upload failed for batch: {batch}")
-        except Exception as e:
-            logger.error(f"Error in upload_batch: {str(e)}")
-
-    for i in range(0, len(video_files), 10):
-        batch = video_files[i : i + 10]
-        batch_thread = Thread(target=upload_batch, args=(batch,))
-        batch_thread.start()
-        logger.debug(f"Started thread for batch {i//10 + 1}")
+# Removed upload_initial_videos as initial bulk ingest not used by current API/UI
 
 
 def _ensure_watcher_running(action: Callable[[Set[str]], None], debounce_time: int):
@@ -388,8 +323,7 @@ async def restore_camera_watchers_from_redis(action: Callable[[Set[str]], None],
         logger.error(f"[Watcher] Failed to restore camera watcher mapping: {e}")
 
 
-def get_initial_upload_status():
-    return initial_upload_status
+# Removed get_initial_upload_status (no external references in smart-nvr project)
 
 
 def get_last_updated():
