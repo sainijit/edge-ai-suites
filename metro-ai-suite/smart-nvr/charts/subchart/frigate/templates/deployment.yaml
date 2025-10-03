@@ -22,6 +22,7 @@ spec:
       initContainers:
         - name: init-resources
           image: curlimages/curl:latest
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
           command: ["/bin/sh", "/scripts/init.sh"]
           env:
             - name: HTTP_PROXY
@@ -31,30 +32,32 @@ spec:
             - name: NO_PROXY
               value: "{{ .Values.global.proxy.no_proxy }},localhost,127.0.0.1,mqtt-broker,nvr-event-router,nvr-event-router-ui,redis,.svc.cluster.local"
           volumeMounts:
-            - name: {{ .Values.global.pvcName }}
+            - name: videos
               mountPath: /videos
             - name: init-script
               mountPath: /scripts
           securityContext:
-            runAsUser: 0
-            runAsGroup: 0
+            runAsUser: {{ .Values.initSecurityContext.runAsUser | default 1000 }}
+            runAsGroup: {{ .Values.initSecurityContext.runAsGroup | default 1000 }}
 
-        #  New initContainer to copy config file into writable /config
-        - name: copy-frigate-config
-          image: busybox
-          command: ["/bin/sh", "-c", "cp /cm/config.yaml /config/config.yaml"]
-          volumeMounts:
-            - name: frigate-config-cm
-              mountPath: /cm
-            - name: frigate-config-dir
-              mountPath: /config
+        # Removed copy-frigate-config initContainer; using direct ConfigMap subPath mount instead
         - name: wait-for-mqtt
           image: busybox:1.36
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
           command: ['sh', '-c', 'until nc -z mqtt-broker 1883; do echo waiting for mqtt; sleep 2; done;']
+
+      {{- if .Values.securityContext.enabled }}
+      securityContext:
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.securityContext.runAsGroup }}
+        runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
+        fsGroup: {{ .Values.securityContext.fsGroup }}
+      {{- end }}
 
       containers:
         - name: frigate
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
           ports:
             - containerPort: 5000
           volumeMounts:
@@ -66,10 +69,11 @@ spec:
             - name: localtime
               mountPath: /etc/localtime
               readOnly: true
-            # Writable config dir
-            - name: frigate-config-dir
-              mountPath: /config
-            - name: {{ .Values.global.pvcName }}
+            # Config file mounted read-only from ConfigMap via subPath
+            - name: frigate-config-cm
+              mountPath: /config/config.yaml
+              subPath: config.yaml
+            - name: videos
               mountPath: /videos
           env:
             - name: HTTP_PROXY
@@ -96,7 +100,7 @@ spec:
             failureThreshold: 3
 
       volumes:
-        - name: {{ .Values.global.pvcName }}
+        - name: videos
           persistentVolumeClaim:
             claimName: {{ .Values.global.pvcName }}
 
@@ -123,6 +127,4 @@ spec:
           configMap:
             name: frigate-config
 
-        #  Writable config dir
-        - name: frigate-config-dir
-          emptyDir: {}
+        # ConfigMap with frigate.yaml (already declared above)

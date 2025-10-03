@@ -1,6 +1,6 @@
 global:
   # pvcName is the name of common PVC used by multiple microservices for persisting models, cache and other files.
-  pvcName: ""
+  pvcName: "smart-nvr-pvc"
   # claimSize is the size of the PVC to be created.
   claimSize: "50Gi"  
   # keepPvc should be set to true to retain the PVC after uninstalling the chart.
@@ -9,8 +9,8 @@ global:
 
   proxy:
     no_proxy: "localhost,127.0.0.1,192.168.0.0/16,172.16.0.0/12,127.0.0.0/8,10.0.0.0/8,.svc.cluster.local"
-    http_proxy: ""
-    https_proxy: ""
+    http_proxy: "http://proxy-pilot.intel.com:916"
+    https_proxy: "http://proxy-pilot.intel.com:916"
 
 frigate:
   image:
@@ -19,8 +19,8 @@ frigate:
     pullPolicy: IfNotPresent
 
   env:
-    FRIGATE_MQTT_USER: ""
-    FRIGATE_MQTT_PASSWORD: ""
+    FRIGATE_MQTT_USER: "mqtt"
+    FRIGATE_MQTT_PASSWORD: "frigate"
     OPENAI_BASE_URL: ""
     OPENAI_API_KEY: "your_openai_api_key"
   persistence:
@@ -44,13 +44,13 @@ nvr-event-router:
   env:
     MODE: "backend"
     FRIGATE_BASE_URL: "http://frigate:5000"
-    VSS_SEARCH_IP: ""
-    VSS_SEARCH_PORT: 
-    VSS_SUMMARY_IP: ""
-    VSS_SUMMARY_PORT: 
-    no_proxy: ""
-    MQTT_USER: ""
-    MQTT_PASSWORD: ""
+    VSS_SEARCH_IP: "http://10.223.24.120"
+    VSS_SEARCH_PORT: 12345
+    VSS_SUMMARY_IP: "http://10.223.24.120"
+    VSS_SUMMARY_PORT: 12345
+    no_proxy: "localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,10.223.22.72,10.223.22.75,10.223.22.68,10.223.22.67,10.223.23.95,10.223.22.176,10.223.24.120,localhost,127.0.0.1,intel.com,.intel.com,192.168.0.0/16,172.16.0.0/12,127.0.0.0/8,10.0.0.0/8,/var/run/docker.sock,*.cluster.local,*.svc"
+    MQTT_USER: "mqtt"
+    MQTT_PASSWORD: "frigate"
     REDIS_PORT: 6379
     REDIS_HOST: "redis"
     MQTT_BROKER: "mqtt-broker"
@@ -80,8 +80,8 @@ mqtt-broker:
     repository: eclipse-mosquitto
     tag: 2.0
   env:
-    MQTT_USER: ""
-    MQTT_PASSWORD: ""
+    MQTT_USER: "mqtt"
+    MQTT_PASSWORD: "frigate"
 
 redis:
   image:

@@ -5,6 +5,7 @@ image:
 replicaCount: 1
 
 service:
+  name: nvr-event-router
   type: ClusterIP
   port: 8000
 
