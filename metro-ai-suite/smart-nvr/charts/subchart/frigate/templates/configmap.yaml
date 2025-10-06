@@ -113,25 +113,33 @@ data:
       return 1
     }
 
-    # List of files (url output checksum(optional))
-    FILES="\
-      https://raw.githubusercontent.com/open-edge-platform/edge-ai-suites/main/metro-ai-suite/smart-nvr/resources/videos/backyard.mp4 $TARGET_DIR/backyard.mp4 \n\
-      https://raw.githubusercontent.com/open-edge-platform/edge-ai-suites/main/metro-ai-suite/smart-nvr/resources/videos/garage.mp4 $TARGET_DIR/garage.mp4 \n\
-      https://raw.githubusercontent.com/open-edge-platform/edge-ai-suites/main/metro-ai-suite/smart-nvr/resources/videos/livingroom.mp4 $TARGET_DIR/livingroom.mp4 \n"
-
+    # List of files: URL DEST_PATH (optional third column checksum not used now)
     echo "[init] Downloading resources to $TARGET_DIR..."
     failed=0
-    # Use a here-doc into while to keep loop in current shell (so 'failed' is updated)
     while read -r url out checksum; do
       [ -z "$url" ] && continue
       download_file "$url" "$out" "$checksum" || failed=$((failed+1))
-    done <<EOF
-    $(printf "%s" "$FILES")
+    done <<'EOF'
+    https://raw.githubusercontent.com/open-edge-platform/edge-ai-suites/main/metro-ai-suite/smart-nvr/resources/videos/backyard.mp4 /videos/backyard.mp4
+    https://raw.githubusercontent.com/open-edge-platform/edge-ai-suites/main/metro-ai-suite/smart-nvr/resources/videos/garage.mp4 /videos/garage.mp4
+    https://raw.githubusercontent.com/open-edge-platform/edge-ai-suites/main/metro-ai-suite/smart-nvr/resources/videos/livingroom.mp4 /videos/livingroom.mp4
     EOF
 
-        if [ "$failed" -gt 0 ]; then
-          echo "ERROR: $failed file(s) failed to download." >&2
-          exit 1
-        fi
+    if [ "$failed" -gt 0 ]; then
+      echo "ERROR: $failed file(s) failed to download." >&2
+      exit 1
+    fi
 
-        echo "[init] All resources downloaded successfully to $TARGET_DIR."
+    # Post-download sanity check
+    missing=0
+    for f in /videos/backyard.mp4 /videos/garage.mp4 /videos/livingroom.mp4; do
+      if [ ! -s "$f" ]; then
+        echo "WARNING: Expected file $f missing or empty." >&2
+        missing=$((missing+1))
+      fi
+    done
+    if [ "$missing" -gt 0 ]; then
+      echo "WARNING: Some video files are missing; related cameras will fail in Frigate." >&2
+    fi
+
+    echo "[init] All resources downloaded process complete for $TARGET_DIR."

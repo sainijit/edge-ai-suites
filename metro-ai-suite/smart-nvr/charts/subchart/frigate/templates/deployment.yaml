@@ -25,6 +25,8 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
           command: ["/bin/sh", "/scripts/init.sh"]
           env:
+            - name: SKIP_EXISTING
+              value: "1"
             - name: HTTP_PROXY
               value: "{{ .Values.global.proxy.http_proxy }}"
             - name: HTTPS_PROXY
