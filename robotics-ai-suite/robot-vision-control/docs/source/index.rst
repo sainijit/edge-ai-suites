@@ -4,13 +4,8 @@
 |rvc_full|
 ##########
 
-About Intel\ |reg| RVC
-#########################################
+.. image:: images/html/robotic-arm-graphic.png
 
-
-.. image:: /images/html/robotic-arm-graphic.png
-
-============================================
 Robotics Pick and Place in Industrial Fields
 ============================================
 
@@ -59,7 +54,25 @@ Robot Vision and Control aims at tackling the problematics and offers a flexible
 Robot Vision and Control is a robotic software framework aimed at tackling Pick and place, Track
 and place industrial problems.
 
-.. image:: /images/html/RobotBackground.png
+.. image:: images/html/RobotBackground.png
+
+
+|rvc_full| Resources
+====================
+
+- :doc:`Get Started <getstarted>`
+
+- :doc:`Components and Features of RVC <components>`
+
+- :doc:`Exemplary Use Cases <use_cases>`
+
+- :doc:`Developer Resources <development>`
+
+- :doc:`Release Notes <releasenotes>`
+
+- :doc:`Troubleshootings <troubleshooting>`
+
+- :doc:`Notices and Disclaimers <legal>`
 
 .. toctree::
    :maxdepth: 2

@@ -45,11 +45,13 @@ services:
       - no_proxy=
     ports:
       - "8000:3000"
-    restart: always
+    restart: on-failure:5
     depends_on:
-      - milvus-db
+      milvus-db:
+        condition: service_healthy
+
   feature-matching:
-    image: ${DOCKER_REGISTRY}intel/feature-matching:v1.0.1
+    image: ${DOCKER_REGISTRY}intel/feature-matching:v1.0.2-pre-RC1
     ports:
       - "9000:8000"
     container_name: ibvs-featurematching
@@ -77,9 +79,15 @@ services:
         condition: service_started
     volumes:
       - image-data:/user/src/app/static
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: on-failure:5
   streaming-pipeline:
-    image: ${DOCKER_REGISTRY}intel/streaming-pipeline:v1.0.1
+    image: ${DOCKER_REGISTRY}intel/streaming-pipeline:v1.0.2-pre-RC1
     build:
       context: src/streaming-pipeline
       dockerfile: Dockerfile
@@ -95,7 +103,13 @@ services:
         gst-launch-1.0 multifilesrc location=file.ts loop=true ! tsdemux ! h264parse ! rtspclientsink protocols=tcp location=rtsp://rtsp-server:8554/stream
       "
     depends_on:
-      - rtsp-server
+      rtsp-server:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "ffprobe -v error -rtsp_transport tcp rtsp://ibvs-mediamtx:8554/stream -show_streams || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     restart: on-failure:5
   rtsp-server:
     image: docker.io/bluenviron/mediamtx:1.10.0
@@ -124,7 +138,12 @@ services:
       - ./src/broker:/mosquitto/config
     ports:
       - "1883:1883"
-    restart: on-failure:5
+    restart: unless-stopped
+    healthcheck:
+      test:  ["CMD", "mosquitto_sub", "-t", "$$SYS/#", "-C", "1", "-i", "healthcheck", "-W", "3"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
   dlstreamer-pipeline-server:
     image: ${DOCKER_REGISTRY}intel/dlstreamer-pipeline-server:3.1.0-ubuntu22
     hostname: dlstreamer-pipeline-server
@@ -194,10 +213,11 @@ services:
     devices:
       - "/dev:/dev"
     depends_on:
-      - broker
+      broker:
+        condition: service_started
     restart: on-failure:5
   app:
-    image: ${DOCKER_REGISTRY}intel/image-based-video-search:v1.0.1
+    image: ${DOCKER_REGISTRY}intel/image-based-video-search:v1.0.2-pre-RC1
     container_name: ibvs-app
     ports:
       - "3000:3000"
@@ -205,9 +225,18 @@ services:
       context: src/app
       dockerfile: Dockerfile
     depends_on:
-      - streaming-pipeline
-      - feature-matching
-      - dlstreamer-pipeline-server
+      streaming-pipeline:
+        condition: service_healthy
+      feature-matching:
+        condition: service_healthy
+      dlstreamer-pipeline-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
     restart: on-failure:5
 
 volumes:
