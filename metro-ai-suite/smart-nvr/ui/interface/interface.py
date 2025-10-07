@@ -50,61 +50,6 @@ def stop_event_updates():
         event_update_thread.join(timeout=2)
         logger.info("Event update thread stopped.")
 
-
-def cleanup_temp_files():
-    """Clean up temporary MP4 files older than 1 hour."""
-    logger.info("Cleaning up temp .mp4 files...")
-    try:
-        temp_dir = tempfile.gettempdir()
-        for file in os.listdir(temp_dir):
-            if file.endswith(".mp4"):
-                full_path = os.path.join(temp_dir, file)
-                age = time.time() - os.path.getmtime(full_path)
-                if age > 3600:
-                    os.remove(full_path)
-                    logger.info(f"Deleted: {full_path}")
-    except Exception as e:
-        logger.error(f"Failed to clean temp files: {e}")
-
-
-def render_rule_rows(rules, response_output):
-    """Render rows of rules with delete buttons."""
-    with gr.Column() as rule_column:
-        for rule in rules:
-            rule_id_state = gr.State(rule["id"])  # Hold rule ID as state
-
-            with gr.Row():
-                gr.Textbox(
-                    value=rule["id"], label="ID", interactive=False, show_label=False
-                )
-                gr.Textbox(
-                    value=rule.get("camera", ""),
-                    label="Camera",
-                    interactive=False,
-                    show_label=False,
-                )
-                gr.Textbox(
-                    value=rule.get("label", ""),
-                    label="Label",
-                    interactive=False,
-                    show_label=False,
-                )
-                gr.Textbox(
-                    value=rule.get("action", ""),
-                    label="Action",
-                    interactive=False,
-                    show_label=False,
-                )
-
-                delete_btn = gr.Button("❌ Delete")
-                delete_btn.click(
-                    fn=delete_rule_by_id,
-                    inputs=[rule_id_state],  # 👈 Pass the rule ID
-                    outputs=[response_output],
-                )
-    return rule_column
-
-
 polling_threads = {}
 
 
