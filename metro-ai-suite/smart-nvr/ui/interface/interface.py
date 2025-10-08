@@ -215,7 +215,8 @@ def wrapper_fn(
     if action == "Summarize":
         raw_summary = result_dict.get("summary_id")
         summary_id = extract_summary_id(raw_summary)
-        logger.info("Extracted Summary ID:", summary_id)
+        # Use proper logging formatting to avoid TypeError during tests
+        logger.info("Extracted Summary ID: %s", summary_id)
 
         return (
             result_dict,
