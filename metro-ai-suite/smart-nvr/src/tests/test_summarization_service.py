@@ -1,3 +1,6 @@
+"""Tests for summarization service video upload and summary retrieval."""
+# Copyright (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock

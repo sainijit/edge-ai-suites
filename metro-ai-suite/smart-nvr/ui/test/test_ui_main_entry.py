@@ -1,3 +1,6 @@
+"""Tests for UI main entry point launching Gradio app."""
+# Copyright (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 import runpy
 from unittest.mock import patch, MagicMock
 
