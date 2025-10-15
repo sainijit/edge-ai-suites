@@ -6,7 +6,7 @@ Control
 
 .. _High Level Design:
 
-.. image:: /images/html/RVCControl.png
+.. image:: images/html/RVCControl.png
    :alt: High Level Design
 
 The above :ref:`High Level Design <High Level Design>` diagram shows in communication between 
@@ -28,6 +28,14 @@ to ask the instance of the :ref:`MotionController plugin<motion_controller_plugi
 tasks.
 
 
+Control Framework Resources
+---------------------------
+
+- :doc:`Example Configuration <rvc_control/parameters>`
+
+- :doc:`Motion Controller Plugin <rvc_control/motion_controller_plugin>`
+
+- :doc:`Grasp Plugin <rvc_control/grasp_plugin>`
 
 .. toctree::
    :maxdepth: 1
